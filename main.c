@@ -1,11 +1,11 @@
-#include "tdc_gen.c"
+#include "tdc_gen_bkp.c"
 #include "stdint.h"
 
 int main(void)
 {
     uint8_t tdc1000_bf[9] = {};
     uint8_t tdc7200_bf[9] = {};
-    float transducer_len = 1.2;
+    float transducer_len = 0.7962;
     uint32_t transducer_freq = 1000000;
     uint8_t transducer_vol = 5;
     uint32_t crystal_freq = 8000000;

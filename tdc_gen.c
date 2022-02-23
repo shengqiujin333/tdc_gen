@@ -4,7 +4,8 @@
 #include <stdint.h>
 #include <math.h>
 #include <stdio.h>
-
+#include <lua.h>
+#include <lauxlib.h>
 
 int tdc1000_gen(uint8_t *output_bf,uint8_t output_bf_len
                 ,float transducer_length,uint32_t transducer_frequency
@@ -22,7 +23,7 @@ int tdc1000_gen(uint8_t *output_bf,uint8_t output_bf_len
     const float length_base_5_vol[] = {0.39,0.51,0.76,1.0,1.2,1.5,1.7};
     const float length_base_24_vol[] = {1.9,2.0,2.2};
 
-    if ((output_bf == NULL) || (output_bf_len < 9)){
+    if ((output_bf == NULL) || (output_bf_len < 10)){
         return -1;
     }
 
@@ -96,7 +97,7 @@ int tdc1000_gen(uint8_t *output_bf,uint8_t output_bf_len
     output_bf[5] = i;
 
     //tof_0 register generator output
-    output_bf[6] = 0xff;
+    output_bf[6] = 0x00;
 
     //error_flags register generator output
     output_bf[7] = 0x03;
@@ -111,7 +112,7 @@ int tdc1000_gen(uint8_t *output_bf,uint8_t output_bf_len
 
 int tdc7200_gen(uint8_t *output_bf,uint8_t output_bf_len)
 {
-    if ((output_bf == NULL) || (output_bf_len < 9)){
+    if ((output_bf == NULL) || (output_bf_len < 10)){
         return -1;
     }
 
@@ -134,10 +135,10 @@ int tdc7200_gen(uint8_t *output_bf,uint8_t output_bf_len)
     output_bf[5] = 0xff;
 
     //clock_cntr_ovf_h register generator output
-    output_bf[6] = 0xff;
+    output_bf[6] = 0x00;
 
     //clock_cntr_ovf_l register generator output
-    output_bf[7] = 0xff;
+    output_bf[7] = 0x00;
 
     //clock_cntr_stop_mask_h register generator output
     output_bf[8] = 0x00;
@@ -156,15 +157,15 @@ int tdc_1000_7200_timegen_by_temperature(uint8_t *tdc1000_bf,uint8_t tdc1000_bf_
 {
     float speed_standard_min = 0.0f,speed_standard_max = 0.0f,tof_standard_min = 0.0f,tof_standard_max = 0.0f;
     const float temperature_adjust = 10.0f;
-    float t0 = 0.0f,total_tof = 0.0f;
+    double t0 = 0.0,total_tof = 0.0;
     uint8_t clk_div = 0;
     uint32_t timeout = 0,timemask = 0;
     uint16_t timing_reg = 0;
 
-    if ((tdc1000_bf == NULL) || (tdc1000_bf_len < 9) || (tdc7200_bf == NULL) || (tdc7200_bf_len < 9)){
+    if ((tdc1000_bf == NULL) || (tdc1000_bf_len < 10) || (tdc7200_bf == NULL) || (tdc7200_bf_len < 10)){
         return -1;
     }
-
+    
     //calculate the stand tof.
     speed_standard_min = 1404.3 + 4.7 * (temperature - temperature_adjust) - 0.04 * (temperature - temperature_adjust) * (temperature - temperature_adjust);
     speed_standard_max = 1404.3 + 4.7 * (temperature + temperature_adjust) - 0.04 * (temperature + temperature_adjust) * (temperature + temperature_adjust);
@@ -172,21 +173,24 @@ int tdc_1000_7200_timegen_by_temperature(uint8_t *tdc1000_bf,uint8_t tdc1000_bf_
     tof_standard_min = transducer_length / speed_standard_max;
 
     //calculate if we need divied the frequency.
-    t0 = 1/transducer_frequency;
+    t0 = 1.0/crystal_frequency;
+    //printf("t0 = %lf %d\r\n",t0,crystal_frequency);
     total_tof = tdc1000_config0_number_tx * (1.0f/transducer_frequency) + (0x3ff - 30)*8*t0+128*t0 + 512*t0 + 1024 *t0;
     if (total_tof < tof_standard_max){
-        t0 = 2/transducer_frequency;
+        t0 = 2.0/crystal_frequency;
         clk_div = 0x4;
     }
     total_tof = tdc1000_config0_number_tx * (1.0f/transducer_frequency) + (0x3ff - 30)*8*t0+128*t0 + 512*t0 + 1024 *t0;
+    //printf("xx:%f %f %f %lf\r\n",total_tof,tof_standard_max,speed_standard_min,t0);
     if (total_tof < tof_standard_max){
         return -1;
     }
     timing_reg = (uint32_t)((tof_standard_max - tdc1000_config0_number_tx * (1.0f/transducer_frequency) - 128*t0 - 512*t0 - 1024 *t0 ) /(8*t0)) + 30;     
-    tdc1000_bf[5] |= (uint8_t)((timing_reg >> 8) & 0xff);
+    tdc1000_bf[5] = (uint8_t)((timing_reg >> 8) & 0xff);//be carefull ,you need or the result with source buffer
     tdc1000_bf[6] = (uint8_t)(timing_reg & 0xff);
-    tdc1000_bf[9] |= clk_div;
+    tdc1000_bf[9] = clk_div;//be carefull ,you need or the result with source buffer
 
+    //printf("1000:%x %x %x\r\n",tdc1000_bf[5],tdc1000_bf[6],tdc1000_bf[9]);
     //calculate the time register of tdc7200.
     timeout = (uint32_t)(tof_standard_max * crystal_frequency);
     timemask = (uint32_t)(tof_standard_min * crystal_frequency);
@@ -197,11 +201,95 @@ int tdc_1000_7200_timegen_by_temperature(uint8_t *tdc1000_bf,uint8_t tdc1000_bf_
     return 0;
 }
 
+//int mytest(uint8_t *bf,uint8_t bfl,float fl,uint32_t ffreq,uint8_t tv,uint32_t cff)
+//{
+//    bf[0] = 1;
+//    bf[1] = 2;
+//    printf("%f %d %d %d\r\n",fl,ffreq,tv,cff);
+//
+//}
+
+static int tdc1000_gen_lua(lua_State* L)
+{
+    uint8_t tdc1000_bf[10] = {};
+    float tlen = luaL_checknumber(L,1);
+    uint32_t tfreq = luaL_checknumber(L,2);
+    uint8_t tvol = luaL_checknumber(L,3);
+    uint32_t cfreq = luaL_checknumber(L,4);
+    
+    //mytest(tdc1000_bf,9,tlen,tfreq,tvol,cfreq);
+    tdc1000_gen(tdc1000_bf,10,tlen,tfreq,tvol,cfreq);
+    lua_pushnumber(L,tdc1000_bf[0]);
+    lua_pushnumber(L,tdc1000_bf[1]);
+    lua_pushnumber(L,tdc1000_bf[2]);
+    lua_pushnumber(L,tdc1000_bf[3]);
+    lua_pushnumber(L,tdc1000_bf[4]);
+    lua_pushnumber(L,tdc1000_bf[5]);
+    lua_pushnumber(L,tdc1000_bf[6]);
+    lua_pushnumber(L,tdc1000_bf[7]);
+    lua_pushnumber(L,tdc1000_bf[8]);
+    lua_pushnumber(L,tdc1000_bf[9]);
+    return 10;
+}
+
+static int tdc7200_gen_lua(lua_State* L)
+{
+    uint8_t tdc7200_bf[10] = {};
+    tdc7200_gen(tdc7200_bf,10);
+
+    lua_pushnumber(L,tdc7200_bf[0]);
+    lua_pushnumber(L,tdc7200_bf[1]);
+    lua_pushnumber(L,tdc7200_bf[2]);
+    lua_pushnumber(L,tdc7200_bf[3]);
+    lua_pushnumber(L,tdc7200_bf[4]);
+    lua_pushnumber(L,tdc7200_bf[5]);
+    lua_pushnumber(L,tdc7200_bf[6]);
+    lua_pushnumber(L,tdc7200_bf[7]);
+    lua_pushnumber(L,tdc7200_bf[8]);
+    lua_pushnumber(L,tdc7200_bf[9]);
+    return 10;
+
+}
+
+static int tdc1000_7200_gen_lua(lua_State* L)
+{
+    uint8_t tdc1000_bf[10] = {};
+    uint8_t tdc7200_bf[10] = {};
+
+    float tmp = luaL_checknumber(L,1);
+    uint32_t cfreq = luaL_checknumber(L,2);
+    float tlen = luaL_checknumber(L,3);
+    uint32_t tfreq = luaL_checknumber(L,4);
+    uint8_t tdc1000_tx = luaL_checknumber(L,5);
+
+    tdc_1000_7200_timegen_by_temperature(tdc1000_bf,10,tdc7200_bf,10,
+            tmp,cfreq,tlen,tfreq,tdc1000_tx);
+
+    //printf("%x %x %x\r\n",tdc1000_bf[5],tdc1000_bf[6],tdc1000_bf[9]);
+    lua_pushnumber(L,tdc1000_bf[5]);
+    lua_pushnumber(L,tdc1000_bf[6]);
+    lua_pushnumber(L,tdc1000_bf[9]);
+    lua_pushnumber(L,tdc7200_bf[6]);
+    lua_pushnumber(L,tdc7200_bf[7]);
+    lua_pushnumber(L,tdc7200_bf[8]);
+    lua_pushnumber(L,tdc7200_bf[9]);
+
+    return 7;
+}
+
+static const struct luaL_Reg _lib_tdc[] = {
+    {"tdc1000_gen",tdc1000_gen_lua},
+    {"tdc7200_gen",tdc7200_gen_lua},
+    {"tdc_by_temperature",tdc1000_7200_gen_lua},
+    {NULL,NULL}
+};
 
 
 
-
-
+int luaopen_tdc_gen(lua_State *L){
+    luaL_newlib(L,_lib_tdc);
+    return 1;
+}
 
 
 
