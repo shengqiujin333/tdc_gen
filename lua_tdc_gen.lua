@@ -53,10 +53,10 @@ for i, line in ftcsv.parseLine("canshu.csv", ",", {bufferSize=50}) do
     tdc1000_conf[6] = tdc1000_conf[6] + temp_conf[2]
     tdc1000_conf[9] = tdc1000_conf[9] + temp_conf[3]
 
-    tdc1000_conf[6] = tdc1000_conf[6] + temp_conf[4]
-    tdc1000_conf[7] = tdc1000_conf[7] + temp_conf[5]
-    tdc1000_conf[8] = tdc1000_conf[8] + temp_conf[6]
-    tdc1000_conf[9] = tdc1000_conf[9] + temp_conf[7]
+    tdc7200_conf[6] = tdc7200_conf[6] + temp_conf[4]
+    tdc7200_conf[7] = tdc7200_conf[7] + temp_conf[5]
+    tdc7200_conf[8] = tdc7200_conf[8] + temp_conf[6]
+    tdc7200_conf[9] = tdc7200_conf[9] + temp_conf[7]
 
     data[i] = {}
     data[i].size = xsize
@@ -86,7 +86,7 @@ for i, line in ftcsv.parseLine("canshu.csv", ",", {bufferSize=50}) do
 end
 
 local fileOutput = ftcsv.encode(data, ",")
-local file = assert(io.open("ALLUSERS.csv", "w"))
+local file = assert(io.open("tdc_conf.csv", "w"))
 file:write(fileOutput)
 file:close()
 
