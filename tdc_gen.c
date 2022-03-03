@@ -77,7 +77,7 @@ int tdc1000_gen(uint8_t *output_bf,uint8_t output_bf_len
     //transducer_length, transducer_voltage,transducer_frequency.
     if(transducer_voltage == 5){
         j = 3; 
-        for(i = 0;i < sizeof(length_base_5_vol)/sizeof(length_base_5_vol[0]) - 2;i++){
+        for(i = 0;i < sizeof(length_base_5_vol)/sizeof(length_base_5_vol[0]) - 1;i++){
             if((transducer_length > length_base_5_vol[i]) && (transducer_length < length_base_5_vol[i+1])){
                 break;
             }
@@ -85,7 +85,7 @@ int tdc1000_gen(uint8_t *output_bf,uint8_t output_bf_len
         }
     }else if(transducer_voltage == 24){
         j = 15;
-        for(i = 0; i < sizeof(length_base_24_vol)/sizeof(length_base_24_vol[0]) - 2;i++){
+        for(i = 0; i < sizeof(length_base_24_vol)/sizeof(length_base_24_vol[0]) - 1;i++){
             if((transducer_length > length_base_24_vol[i]) && (transducer_length < length_base_24_vol[i+1])){
                 break;
             }
@@ -94,7 +94,7 @@ int tdc1000_gen(uint8_t *output_bf,uint8_t output_bf_len
     }
     i = j / 3;
     //we need calculate the time of every partment.
-    output_bf[5] = i;
+    output_bf[5] = i<<5;
 
     //tof_0 register generator output
     output_bf[6] = 0x00;
