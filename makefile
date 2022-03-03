@@ -1,22 +1,19 @@
-target:main
+target = tdc_gen.so
 
-SRC = $(wildcard *.c)
-CFLAGS = -g -Wall -ansi
-
+SRC = tdc_gen.c
 CC := gcc
-EXE := main
-OBJ := $(patsubst %.c,%.o,$(SRC))
+OBJ := tdc_gen.o
 
 .PHONY:clean
 
+$(target):$(OBJ)	
+	$(CC) -shared -o $(target) $(OBJ) 
+$(OBJ):$(SRC)
+	$(CC) -fPIC -Wall  -c $^
+
 clean:
-	rm *.o
+	rm *.o *.so
 test:
 	@echo $(SRC)
 	@echo $(patsubst %.c,%.o,$(SRC))
-$(target):$(OBJ)
-	$(CC) -o $(target) $(OBJ) 
-$(OBJ):$(SRC)
-	$(CC) -c $^
-
 

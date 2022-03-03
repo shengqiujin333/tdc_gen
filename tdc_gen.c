@@ -13,7 +13,7 @@ int tdc1000_gen(uint8_t *output_bf,uint8_t output_bf_len
                 )
 {
     uint16_t i = 0,j = 0;
-    uint8_t threshold = 0,gain = 0;
+    uint8_t threshold = 0;
     const uint8_t config0_number_tx = 0x14;
     const uint8_t config1_measure_cycle = 0x40;
     const uint8_t config1_number_rx = 0x7;
@@ -167,6 +167,8 @@ int tdc_1000_7200_timegen_by_temperature(uint8_t *tdc1000_bf,uint8_t tdc1000_bf_
     }
     
     //calculate the stand tof.
+    //speed_standard_min = 1468 + 3.68 *( (temperature - temperature_adjust) - 10) - 0.0279 * ((temperature - temperature_adjust)-10) * ((temperature - temperature_adjust)-10);
+    //speed_standard_max = 1468 + 3.68 * ((temperature + temperature_adjust)-10) - 0.0279 * ((temperature + temperature_adjust)-10) * ((temperature + temperature_adjust)-10);
     speed_standard_min = 1404.3 + 4.7 * (temperature - temperature_adjust) - 0.04 * (temperature - temperature_adjust) * (temperature - temperature_adjust);
     speed_standard_max = 1404.3 + 4.7 * (temperature + temperature_adjust) - 0.04 * (temperature + temperature_adjust) * (temperature + temperature_adjust);
     tof_standard_max = transducer_length / speed_standard_min;

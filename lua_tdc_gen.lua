@@ -10,8 +10,8 @@ local xlen = 0.0
 local xtfreq = 0
 local xtvol = 0
 local xcfreq = 0
-local temp_max = 50
-local temp_min = 0
+local temperat = 10
+--local temp_min = 0
 
 local data = {}
 for i, line in ftcsv.parseLine("canshu.csv", ",", {bufferSize=50}) do
@@ -46,8 +46,9 @@ for i, line in ftcsv.parseLine("canshu.csv", ",", {bufferSize=50}) do
     tdc7200_conf[4],tdc7200_conf[5],tdc7200_conf[6],
     tdc7200_conf[7],tdc7200_conf[8],tdc7200_conf[9],tdc7200_conf[10] = tdc.tdc7200_gen()
 
+    --print("crystal freq :%d\r\n",xcfreq)
     temp_conf[1],temp_conf[2],temp_conf[3],
-    temp_conf[4],temp_conf[5],temp_conf[6],temp_conf[7] = tdc.tdc_by_temperature(temp_max,xcfreq,xlen,xtfreq,17)
+    temp_conf[4],temp_conf[5],temp_conf[6],temp_conf[7] = tdc.tdc_by_temperature(temperat,xcfreq,xlen,xtfreq,17)
 
     tdc1000_conf[6] = tdc1000_conf[6] + temp_conf[1]
     tdc1000_conf[7] = tdc1000_conf[7] + temp_conf[2]
